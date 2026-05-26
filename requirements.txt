@@ -1,2 +1,7 @@
 pillow~=11.1.0
 torchvision~=0.18.1
+scikit-learn~=1.6.1
+svglib~=1.5.1
+reportlab~=4.4.2
+matplotlib~=3.10.0
+numpy~=1.26.4
