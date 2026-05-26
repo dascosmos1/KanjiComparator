@@ -10,7 +10,7 @@ class KanjiSiameseNetwork(nn.Module):
 
         # Shared encoder (can swap with resnet18, or custom CNN)
         self.cnn = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=3),  # grayscale input
+            nn.Conv2d(1, 64, kernel_size=3),
             nn.ReLU(),
             nn.MaxPool2d(2),
 
@@ -19,14 +19,15 @@ class KanjiSiameseNetwork(nn.Module):
             nn.MaxPool2d(2),
 
             nn.Flatten(),
-            nn.Linear(128 * 5 * 5, 256),  # adjust to your input size
+            nn.Linear(128 * 14 * 14, 256),  # 64x64 input → 14x14 after two conv+pool stages
             nn.ReLU(),
             nn.Dropout(p=0.3),
             nn.Linear(256, 128)
         )
 
     def forward_once(self, x):
-        return self.cnn(x)
+        embedding = self.cnn(x)
+        return F.normalize(embedding, p=2, dim=1)
 
     def forward(self, input1, input2):
         output1 = self.forward_once(input1)
@@ -35,15 +36,15 @@ class KanjiSiameseNetwork(nn.Module):
 
 
 class ContrastiveLoss(nn.Module):
-    def __init__(self, margin=1.0):
+    def __init__(self, margin=2.0):  # L2-normalized embeddings live in [0,2] distance range
         super(ContrastiveLoss, self).__init__()
         self.margin = margin
 
     def forward(self, output1, output2, label):
         distance = F.pairwise_distance(output1, output2)
         loss = torch.mean(
-            (1 - label) * torch.pow(distance, 2) +
-            label * torch.pow(torch.clamp(self.margin - distance, min=0.0), 2)
+            label * torch.pow(distance, 2) +
+            (1 - label) * torch.pow(torch.clamp(self.margin - distance, min=0.0), 2)
         )
         return loss
 

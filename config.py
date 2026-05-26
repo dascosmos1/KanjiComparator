@@ -1,6 +1,11 @@
+import os
+
 DATA_PATH = 'kanji-dataset'
-BATCH_SIZE = 16
+KANJI_REFERENCE_DIR  = os.path.join(DATA_PATH, 'referenceKanji')
+KANJI_HANDWRITING_DIR = os.path.join(DATA_PATH, 'handwritingKanji')
+KANJI_METADATA_CSV   = os.path.join(DATA_PATH, 'handwritingKanji', 'meta.csv')
+
+BATCH_SIZE = 64
 LR = 0.001
-EPOCHS = 10
-IMG_SIZE = (28, 28)
-DEVICE = 'cpu'
+EPOCHS = 25
+IMG_SIZE = (64, 64)
