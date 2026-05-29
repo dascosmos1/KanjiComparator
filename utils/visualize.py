@@ -35,7 +35,8 @@ def plot_distance_distributions(pos_dists, neg_dists, epoch, threshold=1.0, save
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(save_dir, f'distances_epoch_{epoch:02d}.png'), dpi=150)
+    label = f'{epoch:02d}' if isinstance(epoch, int) else epoch
+    plt.savefig(os.path.join(save_dir, f'distances_epoch_{label}.png'), dpi=150)
     plt.close()
 
 
@@ -47,9 +48,19 @@ def plot_roc_curve(all_labels, all_distances, save_dir='plots'):
     fpr, tpr, thresholds = roc_curve(all_labels, scores)
     roc_auc = auc(fpr, tpr)
 
+    # Optimal threshold via Youden's J (maximises TPR - FPR)
+    j_scores = tpr - fpr
+    opt_idx = np.argmax(j_scores)
+    opt_distance  = -thresholds[opt_idx]          # convert back from negated score
+    opt_fpr       = fpr[opt_idx]
+    opt_tpr       = tpr[opt_idx]
+    opt_sim_score = 1 / (1 + opt_distance)
+
     plt.figure(figsize=(7, 6))
     plt.plot(fpr, tpr, color='steelblue', lw=2, label=f'ROC (AUC = {roc_auc:.3f})')
     plt.plot([0, 1], [0, 1], 'k--', lw=1)
+    plt.scatter([opt_fpr], [opt_tpr], color='red', zorder=5,
+                label=f'Optimal threshold\ndistance={opt_distance:.3f} | score={opt_sim_score:.3f}\nTPR={opt_tpr:.3f} | FPR={opt_fpr:.3f}')
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title('ROC Curve — Validation Set (Final Epoch)')
@@ -58,7 +69,14 @@ def plot_roc_curve(all_labels, all_distances, save_dir='plots'):
     plt.tight_layout()
     plt.savefig(os.path.join(save_dir, 'roc_curve.png'), dpi=150)
     plt.close()
-    return roc_auc
+
+    return {
+        'auc':           roc_auc,
+        'opt_distance':  opt_distance,
+        'opt_sim_score': opt_sim_score,
+        'opt_tpr':       opt_tpr,
+        'opt_fpr':       opt_fpr,
+    }
 
 
 def plot_confusion_matrix(all_labels, all_distances, threshold=1.0, save_dir='plots'):
